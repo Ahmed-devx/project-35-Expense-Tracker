@@ -32,7 +32,7 @@ const renderTransactions = () => {
         <div class="content" onclick="showEdit(${id})">
             <div class="left" >
             <p>${text}</p>
-            <p>${sign} ₹ ${amount}</p>
+            <p>${sign} Rs ${amount}</p>
         </div>
             <div class="status ${isCredit ? "credit" : "debit"}">${
       isCredit ? "C" : "D"
@@ -126,3 +126,4 @@ const handleDelete = (id) => {
 
 renderTransactions();
 transactionFormEl.addEventListener("submit", addTransaction);
+
