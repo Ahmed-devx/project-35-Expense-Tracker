@@ -1,129 +1,140 @@
-const state = {
-  earnings: 0,
-  expense: 0,
-  net: 0,
+var state = {
   transactions: [],
 };
 
-let isUpdate = false;
-let tid;
+var isUpdate = false;
+var editId = null;
 
-const transactionFormEl = document.getElementById("transactionForm");
+var formEl = document.getElementById("transactionForm");
+var netEl = document.getElementById("netAmount");
+var earningEl = document.getElementById("earning");
+var expenseEl = document.getElementById("expense");
+var txContainer = document.querySelector(".transactions");
 
-const renderTransactions = () => {
-  const transactionContainerEl = document.querySelector(".transactions");
-  const netAmountEl = document.getElementById("netAmount");
-  const earningEl = document.getElementById("earning");
-  const expenseEl = document.getElementById("expense");
+function render() {
+  var earning = 0;
+  var expense = 0;
+  txContainer.innerHTML = "";
 
-  const transactions = state.transactions;
+  for (var i = 0; i < state.transactions.length; i++) {
+    var tx = state.transactions[i];
+    var isCredit = tx.type == "credit";
+    var sign = isCredit ? "+" : "-";
 
-  let earning = 0;
-  let expense = 0;
-  let net = 0;
-  transactionContainerEl.innerHTML = "";
-  transactions.forEach((transaction) => {
-    const { id, amount, text, type } = transaction;
-    const isCredit = type === "credit" ? true : false;
-    const sign = isCredit ? "+" : "-";
+    var txHtml =
+      '<div class="transaction" id="' +
+      tx.id +
+      '">' +
+      '<div class="content" onclick="toggleEdit(' +
+      tx.id +
+      ')">' +
+      '<div class="left">' +
+      "<p>" +
+      tx.text +
+      "</p>" +
+      "<p>" +
+      sign +
+      " Rs " +
+      tx.amount +
+      "</p>" +
+      "</div>" +
+      '<div class="status ' +
+      (isCredit ? "credit" : "debit") +
+      '">' +
+      (isCredit ? "C" : "D") +
+      "</div>" +
+      "</div>" +
+      '<div class="lower">' +
+      '<div class="icon" onclick="editTx(' +
+      tx.id +
+      ')">' +
+      '<img src="./icons/pen.svg">' +
+      "</div>" +
+      '<div class="icon" onclick="deleteTx(' +
+      tx.id +
+      ')">' +
+      '<img src="./icons/trash.svg">' +
+      "</div>" +
+      "</div>" +
+      "</div>";
 
-    const transactionEl = `
-     <div class="transaction" id="${id}">
-        <div class="content" onclick="showEdit(${id})">
-            <div class="left" >
-            <p>${text}</p>
-            <p>${sign} Rs ${amount}</p>
-        </div>
-            <div class="status ${isCredit ? "credit" : "debit"}">${
-      isCredit ? "C" : "D"
-    }</div>
-        </div>
-        <div class="lower">
-        <div class="icon" onclick="handleUpdate(${id})">
-            <img src="./icons/pen.svg" alt="pen" />
-        </div>
-        <div class="icon" onclick="handleDelete(${id})">
-            <img src="./icons/trash.svg" alt="trash" />
-        </div>
-        </div>
-  </div>`;
-    earning += isCredit ? amount : 0;
-    expense += !isCredit ? amount : 0;
-    net = earning - expense;
+    txContainer.innerHTML += txHtml;
 
-    transactionContainerEl.insertAdjacentHTML("afterbegin", transactionEl);
-  });
+    if (isCredit) {
+      earning += tx.amount;
+    } else {
+      expense += tx.amount;
+    }
+  }
 
-  console.log({ net, earning, expense });
+  var net = earning - expense;
+  netEl.innerHTML = "Rs " + net;
+  earningEl.innerHTML = "Rs " + earning;
+  expenseEl.innerHTML = "Rs " + expense;
+}
 
-  netAmountEl.innerHTML = `Rs ${net}`;
-  earningEl.innerHTML = `Rs ${earning}`;
-  expenseEl.innerHTML = `Rs ${expense}`;
-};
-
-const addTransaction = (e) => {
+function addTx(e) {
   e.preventDefault();
 
-  const isEarn = e.submitter.id === "earnBtn" ? true : false;
-
-  const formData = new FormData(transactionFormEl);
-  const tData = {};
-
-  formData.forEach((value, key) => {
-    tData[key] = value;
-  });
-  const { text, amount } = tData;
-  const transaction = {
-    id: isUpdate ? tid : Math.floor(Math.random() * 1000),
-    text: text,
-    amount: +amount,
-    type: isEarn ? "credit" : "debit",
-  };
+  var text = document.getElementById("text").value;
+  var amount = Number(document.getElementById("amount").value);
+  var type = e.submitter.id == "earnBtn" ? "credit" : "debit";
 
   if (isUpdate) {
-    const tIndex = state.transactions.findIndex((t) => t.id === tid);
-
-    state.transactions[tIndex] = transaction;
+    for (var i = 0; i < state.transactions.length; i++) {
+      if (state.transactions[i].id == editId) {
+        state.transactions[i].text = text;
+        state.transactions[i].amount = amount;
+        state.transactions[i].type = type;
+      }
+    }
     isUpdate = false;
-    tid = null;
+    editId = null;
   } else {
+    var transaction = {
+      id: Math.floor(Math.random() * 10000),
+      text: text,
+      amount: amount,
+      type: type,
+    };
     state.transactions.push(transaction);
   }
 
-  renderTransactions();
+  formEl.reset();
+  render();
+}
 
-  transactionFormEl.reset();
-  console.log({ state });
-};
+function toggleEdit(id) {
+  var txEl = document.getElementById(id);
+  var lower = txEl.querySelector(".lower");
+  if (lower.style.display == "flex") {
+    lower.style.display = "none";
+  } else {
+    lower.style.display = "flex";
+  }
+}
 
-const showEdit = (id) => {
-  console.log("id", id);
+function editTx(id) {
+  for (var i = 0; i < state.transactions.length; i++) {
+    if (state.transactions[i].id == id) {
+      document.getElementById("text").value = state.transactions[i].text;
+      document.getElementById("amount").value = state.transactions[i].amount;
+      isUpdate = true;
+      editId = id;
+    }
+  }
+}
 
-  const selectedTransaction = document.getElementById(id);
-  const lowerEl = selectedTransaction.querySelector(".lower");
+function deleteTx(id) {
+  var newTx = [];
+  for (var i = 0; i < state.transactions.length; i++) {
+    if (state.transactions[i].id != id) {
+      newTx.push(state.transactions[i]);
+    }
+  }
+  state.transactions = newTx;
+  render();
+}
 
-  lowerEl.classList.toggle("showTransaction");
-};
-
-const handleUpdate = (id) => {
-  const transaction = state.transactions.find((t) => t.id === id);
-
-  const { text, amount } = transaction;
-  const textInput = document.getElementById("text");
-  const amountInput = document.getElementById("amount");
-  textInput.value = text;
-  amountInput.value = amount;
-  tid = id;
-  isUpdate = true;
-};
-
-const handleDelete = (id) => {
-  const filteredTransaction = state.transactions.filter((t) => t.id !== id);
-
-  state.transactions = filteredTransaction;
-  renderTransactions();
-};
-
-renderTransactions();
-transactionFormEl.addEventListener("submit", addTransaction);
-
+formEl.addEventListener("submit", addTx);
+render();
